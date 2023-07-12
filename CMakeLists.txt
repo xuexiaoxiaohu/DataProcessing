@@ -1,0 +1,133 @@
+#set cmake version number
+cmake_minimum_required(VERSION 3.4.0)
+
+#set project name
+project(Library-Build-Project)
+SET(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_INCLUDE_CURRENT_DIR ON) 
+# Enable C++17
+set(CMAKE_CXX_STANDARD 17)
+
+# PCL
+if(NOT PCL_ROOT)
+    set(PCL_ROOT "" CACHE PATH "PCL root")
+endif()
+if(PCL_ROOT)
+	set(PCL_LIB_DIR ${PCL_ROOT}/lib/)
+    set(PCL_BIN_DIR ${PCL_ROOT}/bin/)
+    file(GLOB PCL_LIB_FILES ${PCL_ROOT}/lib/*.lib)
+    file(GLOB PCL_BIN_FILES ${PCL_ROOT}/bin/*.dll)
+    set(PCL_INC_DIR ${PCL_ROOT}/include/)
+else()
+    message(FATAL_ERROR "can not generate without PCL")
+endif(PCL_ROOT)
+include_directories(${PCL_INC_DIR})
+
+# Boost
+if(NOT BOOST_ROOT)
+    set(BOOST_ROOT "" CACHE PATH "Boost root")
+endif()
+if(BOOST_ROOT)
+	set(BOOST_LIB_DIR ${BOOST_ROOT}/lib/)
+    set(BOOST_BIN_DIR ${BOOST_ROOT}/bin/)
+    file(GLOB BOOST_LIB_FILES ${BOOST_ROOT}/lib/*.lib)
+    file(GLOB BOOST_BIN_FILES ${BOOST_ROOT}/bin/*.dll)
+    set(BOOST_INC_DIR ${BOOST_ROOT}/include/)
+else()
+    message(FATAL_ERROR "can not generate without Boost")
+endif(BOOST_ROOT)
+include_directories(${BOOST_INC_DIR})
+
+# Eigen
+if(NOT EIGEN_ROOT)
+    set(EIGEN_ROOT "" CACHE PATH "Eigen root")
+endif()
+if(EIGEN_ROOT)
+	set(EIGEN_LIB_DIR ${EIGEN_ROOT}/lib/)
+    set(EIGEN_BIN_DIR ${EIGEN_ROOT}/bin/)
+    file(GLOB EIGEN_LIB_FILES ${EIGEN_ROOT}/lib/*.lib)
+    file(GLOB EIGEN_BIN_FILES ${EIGEN_ROOT}/bin/*.dll)
+    set(EIGEN_INC_DIR ${EIGEN_ROOT}/include/)
+else()
+    message(FATAL_ERROR "can not generate without Eigen")
+endif(EIGEN_ROOT)
+include_directories(${EIGEN_INC_DIR})
+
+# FLANN
+if(NOT FLANN_ROOT)
+    set(FLANN_ROOT "" CACHE PATH "FLANN root")
+endif()
+if(FLANN_ROOT)
+	set(FLANN_LIB_DIR ${FLANN_ROOT}/lib/)
+    set(FLANN_BIN_DIR ${FLANN_ROOT}/bin/)
+    file(GLOB FLANN_LIB_FILES ${FLANN_ROOT}/lib/*.lib)
+    file(GLOB FLANN_BIN_FILES ${FLANN_ROOT}/bin/*.dll)
+    set(FLANN_INC_DIR ${FLANN_ROOT}/include/)
+else()
+    message(FATAL_ERROR "can not generate without FLANN")
+endif(FLANN_ROOT)
+include_directories(${FLANN_INC_DIR})
+
+# VTK
+if(NOT VTK_ROOT)
+    set(VTK_ROOT "" CACHE PATH "VTK root")
+endif()
+if(VTK_ROOT)
+	set(VTK_LIB_DIR ${VTK_ROOT}/lib/)
+    set(VTK_BIN_DIR ${VTK_ROOT}/bin/)
+    file(GLOB VTK_LIB_FILES ${VTK_ROOT}/lib/*.lib)
+    file(GLOB VTK_BIN_FILES ${VTK_ROOT}/bin/*.dll)
+    set(VTK_INC_DIR ${VTK_ROOT}/include/)
+else()
+    message(FATAL_ERROR "can not generate without VTK")
+endif(VTK_ROOT)
+include_directories(${VTK_INC_DIR})
+
+# QT
+set(CMAKE_AUTOMOC ON) 
+find_package(Qt5Widgets)  
+find_package(Qt5Core)
+find_package(Qt5Gui)
+find_package(Qt5OpenGL)
+find_package(Qt5OpenGLExtensions)
+file(GLOB SRC_FILES "./*.cpp" "./*.cxx" "./*.c") 
+file(GLOB HEAD_FILES "./*.h" "./*.hpp" "./*.hxx") 
+
+qt5_wrap_ui(WRAP_FILES ${UI_FILES})
+qt5_add_resources(QRC_FILES ${RCC_FILES})
+
+source_group("Source" FILES ${SRC_FILES})
+source_group("Header" FILES ${HEAD_FILES})
+
+
+add_definitions(-w)
+add_executable(${PROJECT_NAME} ${SRC_FILES} ${HEAD_FILES} ${QRC_FILES} ${WRAP_FILES})
+target_link_libraries(${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::OpenGLExtensions)
+
+target_link_libraries (${PROJECT_NAME} ${PCL_LIB_FILES})
+target_link_libraries (${PROJECT_NAME} ${BOOST_LIB_FILES})
+target_link_libraries (${PROJECT_NAME} ${EIGEN_LIB_FILES})
+target_link_libraries (${PROJECT_NAME} ${FLANN_LIB_FILES})
+target_link_libraries (${PROJECT_NAME} ${VTK_LIB_FILES})
+
+# Produce Library
+set(HEADERS DataProcessing.h)
+set(SOURCES DataProcessing.cpp)
+add_library(DataProcessing ${SOURCES} ${HEADERS})
+target_link_libraries(DataProcessing Qt5::Widgets Qt5::Core Qt5::Gui Qt5::OpenGL Qt5::OpenGLExtensions)
+
+# add debug information
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_definitions(-DAF_CLASSARRANGE_EXPORTS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-Bsymbolic")
+    set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
+    set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -g -O2 -Wall")
+    add_compile_options(-Wall -Wextra -Wpedantic -fPIC -fvisibility=hidden)
+    add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
+else()
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -DAF_CLASSARRANGE_EXPORTS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG:FULL /OPT:REF /OPT:ICF")
+    set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG:FULL /OPT:REF /OPT:ICF")
+endif()
